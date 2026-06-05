@@ -1,0 +1,52 @@
+site_name: preprocess-retina-datasets
+repo_url: https://github.com/Diabetic-Retinopathy-Detection/preprocess-retina-datasets
+site_url: https://Meier-Stefan.github.io/preprocess-retina-datasets
+site_description: This is a script to preprocess retina fundus images datasets into a uniform structure.
+site_author: Stefan Meier
+edit_uri: edit/main/docs/
+repo_name: Diabetic-Retinopathy-Detection/preprocess-retina-datasets
+copyright: Maintained by <a href="https://Meier-Stefan.com">Meier-Stefan</a>.
+
+nav:
+  - Home: index.md
+  - Modules: modules.md
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: ["src/preprocess_retina_datasets"]
+theme:
+  name: material
+  feature:
+    tabs: true
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Diabetic-Retinopathy-Detection/preprocess-retina-datasets
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/preprocess-retina-datasets
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
