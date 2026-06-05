@@ -8,8 +8,7 @@ a uniform square. It supports both single-image and batch processing.
 from __future__ import annotations
 
 import argparse
-import multiprocessing
-import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -102,45 +101,6 @@ def crop_image(
     resized.save(dst_path, quality=100, subsampling=0)
 
 
-def _collect_jobs(
-    input_dir: Path,
-    output_dir: Path,
-    crop_size: int,
-) -> list[tuple[Path, Path, int]]:
-    """Walk ``input_dir`` and return a list of ``(src, dst, crop_size)`` tuples.
-
-    The directory structure under ``input_dir`` is preserved in ``output_dir``.
-    """
-    jobs: list[tuple[Path, Path, int]] = []
-    for root_str, _dirs, files in os.walk(input_dir):
-        root = Path(root_str)
-        for file in files:
-            if file.lower().endswith((".jpeg", ".jpg", ".png", ".tiff", ".tif", ".bmp")):
-                src_path = root / file
-                rel = root.relative_to(input_dir)
-                dst_path = output_dir / rel / file
-                jobs.append((src_path, dst_path, crop_size))
-    return jobs
-
-
-def _worker(args: tuple[Path, Path, int]) -> str | None:
-    """Worker function for multiprocessing pool.
-
-    Args:
-        args: Tuple of ``(src_path, dst_path, crop_size)``.
-
-    Returns:
-        ``str`` representation of the source path on success, or ``None`` on
-        failure.
-    """
-    src_path, dst_path, crop_size = args
-    try:
-        crop_image(src_path, dst_path, crop_size)
-        return str(src_path)
-    except Exception:
-        return None
-
-
 def crop_dataset(
     input_dir: Path,
     output_dir: Path,
@@ -158,25 +118,31 @@ def crop_dataset(
         crop_size: Target size in pixels (width and height).
         num_workers: Number of parallel worker processes.
     """
-    jobs = _collect_jobs(input_dir, output_dir, crop_size)
-    if not jobs:
+    extensions = frozenset({".jpeg", ".jpg", ".png", ".tiff", ".tif", ".bmp"})
+    images = [p for p in input_dir.rglob("*") if p.suffix.lower() in extensions]
+
+    if not images:
         return
 
-    num_workers = min(num_workers, len(jobs))
+    num_workers = min(num_workers, len(images))
 
-    with multiprocessing.Pool(processes=num_workers) as pool:
-        results = list(
-            tqdm(
-                pool.imap_unordered(_worker, jobs),
-                total=len(jobs),
-                desc="Cropping images",
-                unit="img",
-            )
-        )
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        futures = {}
+        for src in images:
+            dst = output_dir / src.relative_to(input_dir)
+            futures[executor.submit(crop_image, src, dst, crop_size)] = src
 
-    failed = [r for r in results if r is None]
+        failed = 0
+        with tqdm(total=len(images), desc="Cropping images", unit="img") as pbar:
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception:
+                    failed += 1
+                pbar.update(1)
+
     if failed:
-        print(f"Warning: {len(failed)} / {len(jobs)} images failed to process.")
+        print(f"Warning: {failed} / {len(images)} images failed to process.")
 
 
 def main() -> None:
