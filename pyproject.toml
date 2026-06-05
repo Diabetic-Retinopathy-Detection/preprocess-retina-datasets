@@ -44,6 +44,7 @@ dev = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.7.6",
     "mkdocstrings[python]>=1.0.3",
+    "types-tqdm>=4.67.3.20260518",
 ]
 
 [build-system]
@@ -52,6 +53,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/preprocess_retina_datasets"]
+include = ["src/preprocess_retina_datasets/py.typed"]
 
 [tool.mypy]
 files = ["src"]
