@@ -28,6 +28,16 @@ crop-images \
 | `-n` / `--num-workers` | `8` | Number of parallel worker processes |
 | `--skip-existing` | off | Skip images where the output file already exists (for resume) |
 
+## Dataset preparation
+
+The EyePACS Kaggle dataset is distributed as split zip archives. Extract them first:
+
+```bash
+bash scripts/extract_eyepacs.sh
+```
+
+See [`docs/extraction.md`](docs/extraction.md) for details.
+
 ## Install
 
 ```bash

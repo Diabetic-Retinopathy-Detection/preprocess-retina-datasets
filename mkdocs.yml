@@ -9,6 +9,7 @@ copyright: Maintained by <a href="https://Meier-Stefan.com">Meier-Stefan</a>.
 
 nav:
   - Home: index.md
+  - Dataset: extraction.md
   - Modules: modules.md
 plugins:
   - search
