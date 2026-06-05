@@ -18,4 +18,4 @@ COPY . /app
 # Sync the project
 RUN uv sync --frozen
 
-CMD [ "python", "preprocess_retina_datasets/foo.py" ]
+CMD [ "crop-images", "--help" ]
