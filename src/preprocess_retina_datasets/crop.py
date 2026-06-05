@@ -76,6 +76,7 @@ def crop_image(
     src_path: Path,
     dst_path: Path,
     crop_size: int = 512,
+    skip_existing: bool = False,
 ) -> None:
     """Crop a single retina image to a uniform square.
 
@@ -87,7 +88,11 @@ def crop_image(
         src_path: Path to the source image.
         dst_path: Path to save the cropped image.
         crop_size: Target size in pixels (width and height).
+        skip_existing: If True, skip processing if ``dst_path`` already exists.
     """
+    if skip_existing and dst_path.exists():
+        return
+
     image = Image.open(src_path).convert("RGB")
 
     bbox = detect_retina_bbox(image)
@@ -106,6 +111,7 @@ def crop_dataset(
     output_dir: Path,
     crop_size: int = 512,
     num_workers: int = 8,
+    skip_existing: bool = False,
 ) -> None:
     """Crop all images in ``input_dir`` and write them to ``output_dir``.
 
@@ -117,6 +123,7 @@ def crop_dataset(
         output_dir: Root directory for cropped output images.
         crop_size: Target size in pixels (width and height).
         num_workers: Number of parallel worker processes.
+        skip_existing: If True, skip images where the output already exists.
     """
     extensions = frozenset({".jpeg", ".jpg", ".png", ".tiff", ".tif", ".bmp"})
     images = [p for p in input_dir.rglob("*") if p.suffix.lower() in extensions]
@@ -124,16 +131,26 @@ def crop_dataset(
     if not images:
         return
 
-    num_workers = min(num_workers, len(images))
+    jobs = []
+    for src in images:
+        dst = output_dir / src.relative_to(input_dir)
+        if skip_existing and dst.exists():
+            continue
+        jobs.append((src, dst))
+
+    if not jobs:
+        print("All images already processed.")
+        return
+
+    num_workers = min(num_workers, len(jobs))
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         futures = {}
-        for src in images:
-            dst = output_dir / src.relative_to(input_dir)
-            futures[executor.submit(crop_image, src, dst, crop_size)] = src
+        for src, dst in jobs:
+            futures[executor.submit(crop_image, src, dst, crop_size, skip_existing)] = src
 
         failed = 0
-        with tqdm(total=len(images), desc="Cropping images", unit="img") as pbar:
+        with tqdm(total=len(jobs), desc="Cropping images", unit="img") as pbar:
             for future in as_completed(futures):
                 try:
                     future.result()
@@ -142,7 +159,7 @@ def crop_dataset(
                 pbar.update(1)
 
     if failed:
-        print(f"Warning: {failed} / {len(images)} images failed to process.")
+        print(f"Warning: {failed} / {len(jobs)} images failed to process.")
 
 
 def main() -> None:
@@ -178,6 +195,11 @@ def main() -> None:
         default=8,
         help="Number of parallel worker processes (default: 8).",
     )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip images where the output file already exists.",
+    )
     args = parser.parse_args()
 
     crop_dataset(
@@ -185,6 +207,7 @@ def main() -> None:
         output_dir=Path(args.output_folder),
         crop_size=args.crop_size,
         num_workers=args.num_workers,
+        skip_existing=args.skip_existing,
     )
 
 

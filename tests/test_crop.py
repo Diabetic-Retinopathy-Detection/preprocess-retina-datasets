@@ -97,6 +97,27 @@ class TestCropImage:
                 img = Image.open(dst)
                 assert img.size == (CROP_SIZE, CROP_SIZE)
 
+    def test_skip_existing_skips_done(self) -> None:
+        src = SAMPLE_DIR / "10_left.jpeg"
+        with tempfile.TemporaryDirectory() as tmp:
+            dst = Path(tmp) / "out.jpeg"
+            crop_image(src, dst, crop_size=CROP_SIZE, skip_existing=True)
+            assert dst.exists()
+            mtime_before = dst.stat().st_mtime
+            crop_image(src, dst, crop_size=CROP_SIZE, skip_existing=True)
+            mtime_after = dst.stat().st_mtime
+            assert mtime_before == mtime_after, "file should not have been overwritten"
+
+    def test_no_skip_existing_overwrites(self) -> None:
+        src = SAMPLE_DIR / "10_left.jpeg"
+        with tempfile.TemporaryDirectory() as tmp:
+            dst = Path(tmp) / "out.jpeg"
+            crop_image(src, dst, crop_size=CROP_SIZE)
+            mtime_before = dst.stat().st_mtime
+            crop_image(src, dst, crop_size=CROP_SIZE)
+            mtime_after = dst.stat().st_mtime
+            assert mtime_before != mtime_after, "file should have been overwritten"
+
 
 class TestCropDataset:
     def test_crops_all_images(self) -> None:
@@ -130,6 +151,27 @@ class TestCropDataset:
             )
             assert len(list(out_dir.iterdir())) == 1
             assert len(list((out_dir / "sub").iterdir())) == 2
+
+    def test_skip_existing_resumes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            crop_dataset(
+                input_dir=SAMPLE_DIR,
+                output_dir=out_dir,
+                crop_size=CROP_SIZE,
+                num_workers=2,
+            )
+            count_first = len(list(out_dir.iterdir()))
+
+            crop_dataset(
+                input_dir=SAMPLE_DIR,
+                output_dir=out_dir,
+                crop_size=CROP_SIZE,
+                num_workers=2,
+                skip_existing=True,
+            )
+            count_second = len(list(out_dir.iterdir()))
+            assert count_first == count_second, "no new files should be created"
 
     def test_empty_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
