@@ -260,3 +260,7 @@ __marimo__/
 #   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
 #   in the .venv directory. It is recommended not to include this directory in version control.
 .pixi
+
+# datasets etc.
+
+data
