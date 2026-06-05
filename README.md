@@ -18,9 +18,10 @@ Removes dark borders from retinal fundus images and resizes to a uniform square.
 
 ```bash
 crop-images \
-    --image-folder /path/to/raw/images \
-    --output-folder /path/to/cropped \
+    --image-folder data/EyePACS-Kaggle/diabetic-retinopathy-detection/extracted/train \
+    --output-folder data/cropped \
     --crop-size 512 \
+    --skip-existing \
     -n 8
 ```
 
@@ -30,6 +31,7 @@ crop-images \
 | `--output-folder` | (required) | Output folder for cropped images |
 | `--crop-size` | `512` | Target size in pixels |
 | `-n` / `--num-workers` | `8` | Number of parallel worker processes |
+| `--skip-existing` | off | Skip images where the output file already exists (for resume) |
 
 ## Install
 
