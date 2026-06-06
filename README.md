@@ -28,9 +28,11 @@ crop-images \
 | `-n` / `--num-workers` | `8` | Number of parallel worker processes |
 | `--skip-existing` | off | Skip images where the output file already exists (for resume) |
 
-### `detect-saliency` — Generate saliency maps
+### `detect-saliency` — Generate saliency maps for training
 
-Generates saliency maps using OpenCV's StaticSaliencyFineGrained algorithm with a preprocessing pipeline (unsharp masking, circular fundus mask, JPEG simulation). Outputs `.npy` files (float32) at the same relative paths as input.
+Takes cropped retina fundus images (output of `crop-images`) and produces saliency maps as `.npy` files (float32). The output preserves the input directory structure and is designed for direct use in training pipelines that expect per-image `.npy` saliency maps.
+
+The preprocessing pipeline applies unsharp masking, a circular fundus mask, and JPEG simulation before running OpenCV's StaticSaliencyFineGrained detector.
 
 ```bash
 detect-saliency \
