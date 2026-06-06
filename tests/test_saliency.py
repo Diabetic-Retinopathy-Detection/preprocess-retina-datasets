@@ -60,6 +60,20 @@ class TestGenerateSaliencyMap:
         assert arr.shape == (128, 256)
         assert arr.dtype == np.float32
 
+    def test_circular_mask_zeros_corners(self, tmp_path: Path) -> None:
+        src = tmp_path / "white.jpeg"
+        dst = tmp_path / "white.npy"
+        img = np.full((512, 512, 3), 255, dtype=np.uint8)
+        cv2.imwrite(str(src), img)
+        generate_saliency_map(src, dst)
+        arr = np.load(str(dst))
+        assert arr[0, 0] == 0.0
+        assert arr[0, -1] == 0.0
+        assert arr[-1, 0] == 0.0
+        assert arr[-1, -1] == 0.0
+        center = arr[256, 256]
+        assert center > 0.0
+
 
 class TestGenerateSaliencyDataset:
     def test_processes_all_images(self, tmp_path: Path) -> None:
@@ -103,6 +117,13 @@ class TestGenerateSaliencyDataset:
     def test_nonexistent_input_dir(self, tmp_path: Path) -> None:
         with pytest.raises(FileNotFoundError):
             generate_saliency_dataset(tmp_path / "nope", tmp_path / "out")
+
+    @pytest.mark.parametrize("workers", [0, -1])
+    def test_invalid_num_workers(self, tmp_path: Path, workers: int) -> None:
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        with pytest.raises(ValueError, match="num_workers must be >= 1"):
+            generate_saliency_dataset(input_dir, tmp_path / "out", num_workers=workers)
 
     def test_bad_file_does_not_block_others(self, tmp_path: Path) -> None:
         input_dir = tmp_path / "input"

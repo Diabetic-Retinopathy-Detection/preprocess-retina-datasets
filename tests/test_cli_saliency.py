@@ -92,6 +92,7 @@ class TestCliSubprocess:
             text=True,
         )
         assert result.returncode == 0
+        assert result.stderr == ""
         assert (output_dir / "img.npy").exists()
 
     def test_missing_dir_returns_one(self, tmp_path: Path) -> None:
@@ -109,3 +110,26 @@ class TestCliSubprocess:
             text=True,
         )
         assert result.returncode == 1
+        assert "Error" in result.stderr
+
+    def test_warning_on_partial_failure(self, tmp_path: Path) -> None:
+        input_dir = tmp_path / "input"
+        output_dir = tmp_path / "output"
+        _make_image(input_dir / "good.jpeg")
+        (input_dir / "bad.jpeg").write_text("not an image")
+
+        result = subprocess.run(  # noqa: S603
+            [
+                sys.executable,
+                "-m",
+                "preprocess_retina_datasets.cli.saliency",
+                "--image-folder",
+                str(input_dir),
+                "--output-folder",
+                str(output_dir),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 1
+        assert "Warning" in result.stderr
