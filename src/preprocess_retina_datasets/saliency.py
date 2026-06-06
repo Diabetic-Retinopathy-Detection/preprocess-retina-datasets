@@ -83,7 +83,9 @@ def generate_saliency_map(
         processed = _preprocess(image)
 
         saliency = cv2.saliency.StaticSaliencyFineGrained_create()  # type: ignore[attr-defined]
-        _, raw_map = saliency.computeSaliency(processed)
+        success, raw_map = saliency.computeSaliency(processed)
+        if not success:
+            _raise_error(f"Saliency detection returned failure for {src_path}")
 
         h, w = raw_map.shape
         final_mask = _build_final_mask(h, w)
@@ -123,6 +125,10 @@ def generate_saliency_dataset(
     if not input_dir.is_dir():
         msg = f"Input directory does not exist: {input_dir}"
         raise FileNotFoundError(msg)
+
+    if num_workers < 1:
+        msg = f"num_workers must be >= 1, got {num_workers}"
+        raise ValueError(msg)
 
     extensions = frozenset({".jpeg", ".jpg", ".png", ".tiff", ".tif", ".bmp"})
     images = [p for p in input_dir.rglob("*") if p.suffix.lower() in extensions]
