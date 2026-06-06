@@ -27,6 +27,7 @@ dependencies = [
 [project.scripts]
 crop-images = "preprocess_retina_datasets.cli.crop:main"
 detect-saliency = "preprocess_retina_datasets.cli.saliency:main"
+package-dataset = "preprocess_retina_datasets.cli.package:main"
 
 [project.urls]
 Homepage = "https://Meier-Stefan.github.io/preprocess-retina-datasets/"
