@@ -1,6 +1,7 @@
 # preprocess-retina-datasets
 
-Preprocessing tools for retinal fundus image datasets. Converts raw datasets into a uniform structure for downstream training and evaluation.
+Preprocessing tools for retinal fundus image datasets. Converts raw datasets into a uniform
+structure for downstream training and evaluation.
 
 - **GitHub**: <https://github.com/Diabetic-Retinopathy-Detection/preprocess-retina-datasets/>
 - **Documentation**: <https://Meier-Stefan.github.io/preprocess-retina-datasets/>
@@ -9,7 +10,9 @@ Preprocessing tools for retinal fundus image datasets. Converts raw datasets int
 
 ### `crop-images` — Bounding-box crop and resize
 
-Removes dark borders from retinal fundus images and resizes to a uniform square. The image is blurred, thresholded to create a foreground mask, and the bounding box of the retina region is extracted. Falls back to a centered square crop if the retina region cannot be detected.
+Removes dark borders from retinal fundus images and resizes to a uniform square. The image is
+blurred, thresholded to create a foreground mask, and the bounding box of the retina region is
+extracted. Falls back to a centered square crop if the retina region cannot be detected.
 
 ```bash
 crop-images \
@@ -30,9 +33,12 @@ crop-images \
 
 ### `detect-saliency` — Generate saliency maps for training
 
-Takes cropped retina fundus images (output of `crop-images`) and produces saliency maps as `.npy` files (float32). The output preserves the input directory structure and is designed for direct use in training pipelines that expect per-image `.npy` saliency maps.
+Takes cropped retina fundus images (output of `crop-images`) and produces saliency maps as
+`.npy` files (float32). The output preserves the input directory structure and is designed for
+direct use in training pipelines that expect per-image `.npy` saliency maps.
 
-The preprocessing pipeline applies unsharp masking, a circular fundus mask, and JPEG simulation before running OpenCV's StaticSaliencyFineGrained detector.
+The preprocessing pipeline applies unsharp masking, a circular fundus mask, and JPEG simulation
+before running OpenCV's StaticSaliencyFineGrained detector.
 
 ```bash
 detect-saliency \
@@ -51,7 +57,10 @@ detect-saliency \
 
 ### `package-dataset` — Build a dataset index pickle
 
-Pairs cropped images with their saliency maps by relative path key and writes a pickle containing `list[tuple[Path, Path]]` of absolute paths. Requires that every image has a matching saliency map and vice versa; raises an error on mismatch with a bounded sample of the missing/extra keys.
+Pairs cropped images with their saliency maps by relative path key and writes a pickle
+containing `list[tuple[Path, Path]]` of absolute paths. Requires that every image has a
+matching saliency map and vice versa; raises an error on mismatch with a bounded sample of
+the missing/extra keys.
 
 ```bash
 package-dataset \

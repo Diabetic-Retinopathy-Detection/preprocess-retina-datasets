@@ -1,6 +1,7 @@
 # Dataset extraction
 
-The EyePACS Kaggle dataset is distributed as split zip archives. This document explains how to extract them before running `crop-images`.
+The EyePACS Kaggle dataset is distributed as split zip archives. This document explains how to
+extract them before running `crop-images`.
 
 ## Prerequisites
 
