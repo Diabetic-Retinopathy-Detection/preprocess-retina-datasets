@@ -18,4 +18,5 @@ COPY . /app
 # Sync the project
 RUN uv sync --frozen
 
-CMD [ "crop-images", "--help" ]
+# Available commands: crop-images, detect-saliency, package-dataset
+CMD [ "uv", "run", "crop-images", "--help" ]

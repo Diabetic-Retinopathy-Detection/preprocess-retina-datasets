@@ -1,0 +1,17 @@
+.git
+.venv
+.venv*/
+data
+tests
+Dockerfile
+.github
+.pre-commit-config.yaml
+.markdownlint.json
+.gitignore
+.gitattributes
+*.md
+docs
+scripts
+CONTRIBUTING.md
+LICENSE
+Makefile
