@@ -49,6 +49,23 @@ detect-saliency \
 | `-n` / `--num-workers` | `8` | Number of parallel worker processes |
 | `--skip-existing` | off | Skip images where the output file already exists (for resume) |
 
+### `package-dataset` — Build a dataset index pickle
+
+Pairs cropped images with their saliency maps by relative path key and writes a pickle containing `list[tuple[Path, Path]]` of absolute paths. Requires that every image has a matching saliency map and vice versa; raises an error on mismatch with a bounded sample of the missing/extra keys.
+
+```bash
+package-dataset \
+    --image-folder data/cropped/train \
+    --saliency-folder data/saliency/train \
+    --output-file data/data_index/train.pkl
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--image-folder` | (required) | Folder of cropped images |
+| `--saliency-folder` | (required) | Folder of `.npy` saliency maps |
+| `--output-file` | (required) | Output pickle file path |
+
 ## Dataset preparation
 
 The EyePACS Kaggle dataset is distributed as split zip archives. Extract them first:
