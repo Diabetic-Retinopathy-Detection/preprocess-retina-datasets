@@ -7,13 +7,36 @@ a uniform square. It supports both single-image and batch processing.
 
 from __future__ import annotations
 
-import argparse
+from collections.abc import Iterable
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from PIL import Image, ImageFilter
-from tqdm import tqdm
+
+try:
+    from tqdm import tqdm
+except ImportError:
+
+    class tqdm:  # type: ignore[no-redef]
+        def __init__(self, iterable: Iterable[Any] | None = None, **kwargs: object) -> None:
+            self.iterable = iterable
+
+        def __enter__(self) -> Any:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            pass
+
+        def update(self, n: int = 1) -> None:
+            pass
+
+        def __iter__(self) -> Any:
+            return iter(self.iterable) if self.iterable else iter([])
+
+
+from preprocess_retina_datasets.errors import ImageProcessingError
 
 
 def detect_retina_bbox(image: Image.Image) -> tuple[int, int, int, int] | None:
@@ -93,17 +116,21 @@ def crop_image(
     if skip_existing and dst_path.exists():
         return
 
-    image = Image.open(src_path).convert("RGB")
+    try:
+        image = Image.open(src_path).convert("RGB")
 
-    bbox = detect_retina_bbox(image)
-    if bbox is None:
-        bbox = square_center_bbox(image)
+        bbox = detect_retina_bbox(image)
+        if bbox is None:
+            bbox = square_center_bbox(image)
 
-    cropped = image.crop(bbox)
-    resized = cropped.resize((crop_size, crop_size), Image.Resampling.LANCZOS)
+        cropped = image.crop(bbox)
+        resized = cropped.resize((crop_size, crop_size), Image.Resampling.LANCZOS)
 
-    dst_path.parent.mkdir(parents=True, exist_ok=True)
-    resized.save(dst_path, quality=100, subsampling=0)
+        dst_path.parent.mkdir(parents=True, exist_ok=True)
+        resized.save(dst_path, quality=100, subsampling=0)
+    except Exception as exc:
+        msg = f"Failed to process {src_path}: {exc}"
+        raise ImageProcessingError(msg) from exc
 
 
 def crop_dataset(
@@ -112,7 +139,7 @@ def crop_dataset(
     crop_size: int = 512,
     num_workers: int = 8,
     skip_existing: bool = False,
-) -> None:
+) -> int:
     """Crop all images in ``input_dir`` and write them to ``output_dir``.
 
     The directory structure under ``input_dir`` is preserved. Processing is
@@ -124,14 +151,21 @@ def crop_dataset(
         crop_size: Target size in pixels (width and height).
         num_workers: Number of parallel worker processes.
         skip_existing: If True, skip images where the output already exists.
+
+    Returns:
+        Number of images that failed to process.
     """
+    if not input_dir.is_dir():
+        msg = f"Input directory does not exist: {input_dir}"
+        raise FileNotFoundError(msg)
+
     extensions = frozenset({".jpeg", ".jpg", ".png", ".tiff", ".tif", ".bmp"})
     images = [p for p in input_dir.rglob("*") if p.suffix.lower() in extensions]
 
     if not images:
-        return
+        return 0
 
-    jobs = []
+    jobs: list[tuple[Path, Path]] = []
     for src in images:
         dst = output_dir / src.relative_to(input_dir)
         if skip_existing and dst.exists():
@@ -139,8 +173,7 @@ def crop_dataset(
         jobs.append((src, dst))
 
     if not jobs:
-        print("All images already processed.")
-        return
+        return 0
 
     num_workers = min(num_workers, len(jobs))
 
@@ -154,62 +187,8 @@ def crop_dataset(
             for future in as_completed(futures):
                 try:
                     future.result()
-                except Exception:
+                except ImageProcessingError:
                     failed += 1
                 pbar.update(1)
 
-    if failed:
-        print(f"Warning: {failed} / {len(jobs)} images failed to process.")
-
-
-def main() -> None:
-    """Entry point for the ``crop-images`` CLI.
-
-    Parses arguments and runs ``crop_dataset``.
-    """
-    parser = argparse.ArgumentParser(
-        description="Crop retina fundus images to uniform square size.",
-    )
-    parser.add_argument(
-        "--image-folder",
-        type=str,
-        required=True,
-        help="Path to the input folder containing images.",
-    )
-    parser.add_argument(
-        "--output-folder",
-        type=str,
-        required=True,
-        help="Path to the output folder for cropped images.",
-    )
-    parser.add_argument(
-        "--crop-size",
-        type=int,
-        default=512,
-        help="Target crop size in pixels (default: 512).",
-    )
-    parser.add_argument(
-        "-n",
-        "--num-workers",
-        type=int,
-        default=8,
-        help="Number of parallel worker processes (default: 8).",
-    )
-    parser.add_argument(
-        "--skip-existing",
-        action="store_true",
-        help="Skip images where the output file already exists.",
-    )
-    args = parser.parse_args()
-
-    crop_dataset(
-        input_dir=Path(args.image_folder),
-        output_dir=Path(args.output_folder),
-        crop_size=args.crop_size,
-        num_workers=args.num_workers,
-        skip_existing=args.skip_existing,
-    )
-
-
-if __name__ == "__main__":
-    main()
+    return failed

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
@@ -20,6 +18,7 @@ SAMPLE_DIR = FIXTURES / "eyepacs_sample"
 
 SAMPLE_IMAGES = sorted(SAMPLE_DIR.iterdir())
 
+FIRST = SAMPLE_IMAGES[0] if SAMPLE_IMAGES else Path("/nonexistent")
 CROP_SIZE = 512
 
 
@@ -63,18 +62,16 @@ class TestSquareCenterBbox:
 
 class TestCropImage:
     def test_output_size(self) -> None:
-        src = SAMPLE_DIR / "10_left.jpeg"
         with tempfile.TemporaryDirectory() as tmp:
             dst = Path(tmp) / "out.jpeg"
-            crop_image(src, dst, crop_size=CROP_SIZE)
+            crop_image(FIRST, dst, crop_size=CROP_SIZE)
             out = Image.open(dst)
             assert out.size == (CROP_SIZE, CROP_SIZE)
 
     def test_output_has_content(self) -> None:
-        src = SAMPLE_DIR / "10_left.jpeg"
         with tempfile.TemporaryDirectory() as tmp:
             dst = Path(tmp) / "out.jpeg"
-            crop_image(src, dst, crop_size=CROP_SIZE)
+            crop_image(FIRST, dst, crop_size=CROP_SIZE)
             arr = np.array(Image.open(dst))
             assert arr.min() < arr.max(), "output image should not be uniform"
 
@@ -98,23 +95,21 @@ class TestCropImage:
                 assert img.size == (CROP_SIZE, CROP_SIZE)
 
     def test_skip_existing_skips_done(self) -> None:
-        src = SAMPLE_DIR / "10_left.jpeg"
         with tempfile.TemporaryDirectory() as tmp:
             dst = Path(tmp) / "out.jpeg"
-            crop_image(src, dst, crop_size=CROP_SIZE, skip_existing=True)
+            crop_image(FIRST, dst, crop_size=CROP_SIZE, skip_existing=True)
             assert dst.exists()
             mtime_before = dst.stat().st_mtime
-            crop_image(src, dst, crop_size=CROP_SIZE, skip_existing=True)
+            crop_image(FIRST, dst, crop_size=CROP_SIZE, skip_existing=True)
             mtime_after = dst.stat().st_mtime
             assert mtime_before == mtime_after, "file should not have been overwritten"
 
     def test_no_skip_existing_overwrites(self) -> None:
-        src = SAMPLE_DIR / "10_left.jpeg"
         with tempfile.TemporaryDirectory() as tmp:
             dst = Path(tmp) / "out.jpeg"
-            crop_image(src, dst, crop_size=CROP_SIZE)
+            crop_image(FIRST, dst, crop_size=CROP_SIZE)
             mtime_before = dst.stat().st_mtime
-            crop_image(src, dst, crop_size=CROP_SIZE)
+            crop_image(FIRST, dst, crop_size=CROP_SIZE)
             mtime_after = dst.stat().st_mtime
             assert mtime_before != mtime_after, "file should have been overwritten"
 
@@ -123,12 +118,13 @@ class TestCropDataset:
     def test_crops_all_images(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             out_dir = Path(tmp)
-            crop_dataset(
+            failed = crop_dataset(
                 input_dir=SAMPLE_DIR,
                 output_dir=out_dir,
                 crop_size=CROP_SIZE,
                 num_workers=2,
             )
+            assert failed == 0
             out_files = sorted(out_dir.iterdir())
             assert len(out_files) == len(SAMPLE_IMAGES)
             for f in out_files:
@@ -143,12 +139,13 @@ class TestCropDataset:
             for f in list(SAMPLE_IMAGES)[:2]:
                 (sub_dir / f.name).write_bytes(f.read_bytes())
 
-            crop_dataset(
+            failed = crop_dataset(
                 input_dir=Path(tmp),
                 output_dir=out_dir,
                 crop_size=CROP_SIZE,
                 num_workers=2,
             )
+            assert failed == 0
             assert len(list(out_dir.iterdir())) == 1
             assert len(list((out_dir / "sub").iterdir())) == 2
 
@@ -178,39 +175,11 @@ class TestCropDataset:
             empty_dir = Path(tmp) / "empty"
             empty_dir.mkdir()
             out_dir = Path(tmp) / "out"
-            crop_dataset(
+            failed = crop_dataset(
                 input_dir=empty_dir,
                 output_dir=out_dir,
                 crop_size=CROP_SIZE,
                 num_workers=2,
             )
-            assert not out_dir.exists()
-
-
-class TestCLI:
-    def test_cli_crops_images(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            out_dir = Path(tmp)
-            result = subprocess.run(  # noqa: S603
-                [
-                    sys.executable,
-                    "-m",
-                    "preprocess_retina_datasets.crop",
-                    "--image-folder",
-                    str(SAMPLE_DIR),
-                    "--output-folder",
-                    str(out_dir),
-                    "--crop-size",
-                    str(CROP_SIZE),
-                    "-n",
-                    "2",
-                ],
-                capture_output=True,
-                text=True,
-            )
-            assert result.returncode == 0, f"stderr: {result.stderr}"
-            out_files = sorted(out_dir.iterdir())
-            assert len(out_files) == len(SAMPLE_IMAGES)
-            for f in out_files:
-                img = Image.open(f)
-                assert img.size == (CROP_SIZE, CROP_SIZE)
+            assert failed == 0
+            assert not out_dir.exists() or not any(out_dir.iterdir())

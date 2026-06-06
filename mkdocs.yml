@@ -1,7 +1,7 @@
 site_name: preprocess-retina-datasets
 repo_url: https://github.com/Diabetic-Retinopathy-Detection/preprocess-retina-datasets
 site_url: https://Meier-Stefan.github.io/preprocess-retina-datasets
-site_description: This is a script to preprocess retina fundus images datasets into a uniform structure.
+site_description: A library and CLI to preprocess retina fundus image datasets into a uniform structure.
 site_author: Stefan Meier
 edit_uri: edit/main/docs/
 repo_name: Diabetic-Retinopathy-Detection/preprocess-retina-datasets
@@ -16,11 +16,9 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: ["src/preprocess_retina_datasets"]
+          paths: ["src"]
 theme:
   name: material
-  feature:
-    tabs: true
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
