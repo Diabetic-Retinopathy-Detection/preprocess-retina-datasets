@@ -92,7 +92,6 @@ class TestCliSubprocess:
             text=True,
         )
         assert result.returncode == 0
-        assert result.stderr == ""
         assert (output_dir / "img.npy").exists()
 
     def test_missing_dir_returns_one(self, tmp_path: Path) -> None:

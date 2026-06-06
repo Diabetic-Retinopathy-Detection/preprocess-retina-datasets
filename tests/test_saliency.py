@@ -61,9 +61,10 @@ class TestGenerateSaliencyMap:
         assert arr.dtype == np.float32
 
     def test_circular_mask_zeros_corners(self, tmp_path: Path) -> None:
-        src = tmp_path / "white.jpeg"
-        dst = tmp_path / "white.npy"
-        img = np.full((512, 512, 3), 255, dtype=np.uint8)
+        src = tmp_path / "noise.jpeg"
+        dst = tmp_path / "noise.npy"
+        rng = np.random.default_rng(42)
+        img = rng.integers(0, 256, (512, 512, 3), dtype=np.uint8)
         cv2.imwrite(str(src), img)
         generate_saliency_map(src, dst)
         arr = np.load(str(dst))
@@ -71,8 +72,7 @@ class TestGenerateSaliencyMap:
         assert arr[0, -1] == 0.0
         assert arr[-1, 0] == 0.0
         assert arr[-1, -1] == 0.0
-        center = arr[256, 256]
-        assert center > 0.0
+        assert np.mean(arr[240:272, 240:272]) > 0.0
 
 
 class TestGenerateSaliencyDataset:

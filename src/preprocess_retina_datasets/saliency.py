@@ -8,7 +8,7 @@ detector.
 from __future__ import annotations
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from contextlib import nullcontext
+from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
 from typing import NoReturn
 
@@ -137,7 +137,7 @@ def _execute_jobs(
             futures[executor.submit(generate_saliency_map, src, dst, skip_existing=skip_existing)] = src
 
         failed = 0
-        cm: object = (
+        cm: AbstractContextManager = (
             tqdm(total=len(jobs), desc="Generating saliency maps", unit="img") if show_progress else nullcontext()
         )
         with cm as pbar:
