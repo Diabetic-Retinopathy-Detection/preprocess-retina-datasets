@@ -8,7 +8,6 @@ detector.
 from __future__ import annotations
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
 from typing import NoReturn
 
@@ -137,17 +136,20 @@ def _execute_jobs(
             futures[executor.submit(generate_saliency_map, src, dst, skip_existing=skip_existing)] = src
 
         failed = 0
-        cm: AbstractContextManager = (
-            tqdm(total=len(jobs), desc="Generating saliency maps", unit="img") if show_progress else nullcontext()
-        )
-        with cm as pbar:
+        if show_progress:
+            with tqdm(total=len(jobs), desc="Generating saliency maps", unit="img") as pbar:
+                for future in as_completed(futures):
+                    try:
+                        future.result()
+                    except ImageProcessingError:
+                        failed += 1
+                    pbar.update(1)
+        else:
             for future in as_completed(futures):
                 try:
                     future.result()
                 except ImageProcessingError:
                     failed += 1
-                if show_progress:
-                    pbar.update(1)
 
     return failed
 
