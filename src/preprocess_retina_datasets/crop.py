@@ -7,34 +7,12 @@ a uniform square. It supports both single-image and batch processing.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 from PIL import Image, ImageFilter
-
-try:
-    from tqdm import tqdm
-except ImportError:
-
-    class tqdm:  # type: ignore[no-redef]
-        def __init__(self, iterable: Iterable[Any] | None = None, **kwargs: object) -> None:
-            self.iterable = iterable
-
-        def __enter__(self) -> Any:
-            return self
-
-        def __exit__(self, *args: object) -> None:
-            pass
-
-        def update(self, n: int = 1) -> None:
-            pass
-
-        def __iter__(self) -> Any:
-            return iter(self.iterable) if self.iterable else iter([])
-
+from tqdm import tqdm
 
 from preprocess_retina_datasets.errors import ImageProcessingError
 

@@ -28,6 +28,44 @@ crop-images \
 | `-n` / `--num-workers` | `8` | Number of parallel worker processes |
 | `--skip-existing` | off | Skip images where the output file already exists (for resume) |
 
+### `detect-saliency` — Generate saliency maps for training
+
+Takes cropped retina fundus images (output of `crop-images`) and produces saliency maps as `.npy` files (float32). The output preserves the input directory structure and is designed for direct use in training pipelines that expect per-image `.npy` saliency maps.
+
+The preprocessing pipeline applies unsharp masking, a circular fundus mask, and JPEG simulation before running OpenCV's StaticSaliencyFineGrained detector.
+
+```bash
+detect-saliency \
+    --image-folder data/cropped/train \
+    --output-folder data/saliency/train \
+    --skip-existing \
+    -n 8
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--image-folder` | (required) | Input folder of cropped images (subfolders preserved) |
+| `--output-folder` | (required) | Output folder for `.npy` saliency maps |
+| `-n` / `--num-workers` | `8` | Number of parallel worker processes |
+| `--skip-existing` | off | Skip images where the output file already exists (for resume) |
+
+### `package-dataset` — Build a dataset index pickle
+
+Pairs cropped images with their saliency maps by relative path key and writes a pickle containing `list[tuple[Path, Path]]` of absolute paths. Requires that every image has a matching saliency map and vice versa; raises an error on mismatch with a bounded sample of the missing/extra keys.
+
+```bash
+package-dataset \
+    --image-folder data/cropped/train \
+    --saliency-folder data/saliency/train \
+    --output-file data/data_index/train.pkl
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--image-folder` | (required) | Folder of cropped images |
+| `--saliency-folder` | (required) | Folder of `.npy` saliency maps |
+| `--output-file` | (required) | Output pickle file path |
+
 ## Dataset preparation
 
 The EyePACS Kaggle dataset is distributed as split zip archives. Extract them first:

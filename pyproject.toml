@@ -20,11 +20,14 @@ classifiers = [
 dependencies = [
     "pillow>=11.0.0",
     "numpy>=1.26.0",
+    "opencv-contrib-python-headless>=4.8.0",
     "tqdm>=4.66.0",
 ]
 
 [project.scripts]
 crop-images = "preprocess_retina_datasets.cli.crop:main"
+detect-saliency = "preprocess_retina_datasets.cli.saliency:main"
+build-dataset-index = "preprocess_retina_datasets.cli.package:main"
 
 [project.urls]
 Homepage = "https://Meier-Stefan.github.io/preprocess-retina-datasets/"
