@@ -8,6 +8,7 @@ detector.
 from __future__ import annotations
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from contextlib import nullcontext
 from pathlib import Path
 from typing import NoReturn
 
@@ -102,12 +103,62 @@ def generate_saliency_map(
         raise ImageProcessingError(msg) from exc
 
 
+def _collect_jobs(
+    input_dir: Path,
+    output_dir: Path,
+    *,
+    skip_existing: bool = False,
+) -> list[tuple[Path, Path]]:
+    extensions = frozenset({".jpeg", ".jpg", ".png", ".tiff", ".tif", ".bmp"})
+    images = [p for p in input_dir.rglob("*") if p.suffix.lower() in extensions]
+
+    jobs: list[tuple[Path, Path]] = []
+    for src in images:
+        dst = output_dir / src.relative_to(input_dir)
+        dst = dst.with_suffix(".npy")
+        if skip_existing and dst.exists():
+            continue
+        jobs.append((src, dst))
+    return jobs
+
+
+def _execute_jobs(
+    jobs: list[tuple[Path, Path]],
+    num_workers: int,
+    *,
+    skip_existing: bool = False,
+    show_progress: bool = True,
+) -> int:
+    num_workers = min(num_workers, len(jobs))
+
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        futures = {}
+        for src, dst in jobs:
+            futures[executor.submit(generate_saliency_map, src, dst, skip_existing=skip_existing)] = src
+
+        failed = 0
+        cm: object = (
+            tqdm(total=len(jobs), desc="Generating saliency maps", unit="img") if show_progress else nullcontext()
+        )
+        with cm as pbar:
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except ImageProcessingError:
+                    failed += 1
+                if show_progress:
+                    pbar.update(1)
+
+    return failed
+
+
 def generate_saliency_dataset(
     input_dir: Path,
     output_dir: Path,
     *,
     num_workers: int = 8,
     skip_existing: bool = False,
+    show_progress: bool = True,
 ) -> int:
     """Generate saliency maps for all images in ``input_dir``.
 
@@ -120,6 +171,7 @@ def generate_saliency_dataset(
         output_dir: Root directory for saliency map output.
         num_workers: Number of parallel worker processes.
         skip_existing: If True, skip images where the output already exists.
+        show_progress: If True, display a progress bar via tqdm.
 
     Returns:
         Number of images that failed to process.
@@ -132,37 +184,8 @@ def generate_saliency_dataset(
         msg = f"num_workers must be >= 1, got {num_workers}"
         raise ValueError(msg)
 
-    extensions = frozenset({".jpeg", ".jpg", ".png", ".tiff", ".tif", ".bmp"})
-    images = [p for p in input_dir.rglob("*") if p.suffix.lower() in extensions]
-
-    if not images:
-        return 0
-
-    jobs: list[tuple[Path, Path]] = []
-    for src in images:
-        dst = output_dir / src.relative_to(input_dir)
-        dst = dst.with_suffix(".npy")
-        if skip_existing and dst.exists():
-            continue
-        jobs.append((src, dst))
-
+    jobs = _collect_jobs(input_dir, output_dir, skip_existing=skip_existing)
     if not jobs:
         return 0
 
-    num_workers = min(num_workers, len(jobs))
-
-    with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        futures = {}
-        for src, dst in jobs:
-            futures[executor.submit(generate_saliency_map, src, dst, skip_existing=skip_existing)] = src
-
-        failed = 0
-        with tqdm(total=len(jobs), desc="Generating saliency maps", unit="img") as pbar:
-            for future in as_completed(futures):
-                try:
-                    future.result()
-                except ImageProcessingError:
-                    failed += 1
-                pbar.update(1)
-
-    return failed
+    return _execute_jobs(jobs, num_workers, skip_existing=skip_existing, show_progress=show_progress)
