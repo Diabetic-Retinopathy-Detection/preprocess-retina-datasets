@@ -1,10 +1,10 @@
 [project]
 name = "preprocess-retina-datasets"
 version = "0.0.1"
-description = "This is a script to preprocess retina fundus images datasets into a uniform structure."
+description = "A library and CLI to preprocess retina fundus image datasets into a uniform structure."
 authors = [{ name = "Stefan Meier", email = "42180739+Meier-Stefan@users.noreply.github.com (open issues to contact me)" }]
 readme = "README.md"
-keywords = ['python']
+keywords = ['retina', 'fundus', 'image-processing', 'diabetic-retinopathy', 'preprocessing']
 requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Developers",
@@ -14,9 +14,17 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
+dependencies = [
+    "pillow>=11.0.0",
+    "numpy>=1.26.0",
+    "tqdm>=4.66.0",
+]
+
+[project.scripts]
+crop-images = "preprocess_retina_datasets.cli.crop:main"
 
 [project.urls]
 Homepage = "https://Meier-Stefan.github.io/preprocess-retina-datasets/"
@@ -35,6 +43,7 @@ dev = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.7.6",
     "mkdocstrings[python]>=1.0.3",
+    "types-tqdm>=4.67.3.20260518",
 ]
 
 [build-system]
@@ -43,6 +52,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/preprocess_retina_datasets"]
+include = ["src/preprocess_retina_datasets/py.typed"]
 
 [tool.mypy]
 files = ["src"]
@@ -96,8 +106,6 @@ select = [
     "TRY",
 ]
 ignore = [
-    # LineTooLong
-    "E501",
     # DoNotAssignLambda
     "E731",
 ]

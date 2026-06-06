@@ -5,4 +5,4 @@
 [![Commit activity](https://img.shields.io/github/commit-activity/m/Diabetic-Retinopathy-Detection/preprocess-retina-datasets)](https://img.shields.io/github/commit-activity/m/Diabetic-Retinopathy-Detection/preprocess-retina-datasets)
 [![License](https://img.shields.io/github/license/Diabetic-Retinopathy-Detection/preprocess-retina-datasets)](https://img.shields.io/github/license/Diabetic-Retinopathy-Detection/preprocess-retina-datasets)
 
-This is a script to preprocess retina fundus images datasets into a uniform structure.
+A library and CLI to preprocess retina fundus image datasets into a uniform structure.
