@@ -39,6 +39,8 @@ def _preprocess(image: np.ndarray) -> np.ndarray:
     processed = weighted * mask + 128 * (1 - mask)
     processed = processed.astype(np.uint8)
 
+    # JPEG encode/decode simulates lossy compression, making the pipeline
+    # robust to JPEG artifacts commonly present in fundus datasets.
     _, jpeg = cv2.imencode(".jpeg", processed)
     decoded = cv2.imdecode(jpeg, cv2.IMREAD_COLOR)
     if decoded is None:
