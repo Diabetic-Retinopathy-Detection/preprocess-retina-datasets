@@ -28,6 +28,25 @@ crop-images \
 | `-n` / `--num-workers` | `8` | Number of parallel worker processes |
 | `--skip-existing` | off | Skip images where the output file already exists (for resume) |
 
+### `detect-saliency` — Generate saliency maps
+
+Generates saliency maps using OpenCV's StaticSaliencyFineGrained algorithm with a preprocessing pipeline (unsharp masking, circular fundus mask, JPEG simulation). Outputs `.npy` files (float32) at the same relative paths as input.
+
+```bash
+detect-saliency \
+    --image-folder data/cropped/train \
+    --output-folder data/saliency/train \
+    --skip-existing \
+    -n 8
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--image-folder` | (required) | Input folder of cropped images (subfolders preserved) |
+| `--output-folder` | (required) | Output folder for `.npy` saliency maps |
+| `-n` / `--num-workers` | `8` | Number of parallel worker processes |
+| `--skip-existing` | off | Skip images where the output file already exists (for resume) |
+
 ## Dataset preparation
 
 The EyePACS Kaggle dataset is distributed as split zip archives. Extract them first:

@@ -2,8 +2,7 @@
 
 Applies a preprocessing pipeline (unsharp masking, circular fundus mask,
 JPEG simulation) and then runs OpenCV's :class:`cv2.saliency.StaticSaliencyFineGrained`
-detector. This is a practical substitute commonly used in fundus preprocessing;
-it is not guaranteed to match any particular reference implementation.
+detector.
 """
 
 from __future__ import annotations
