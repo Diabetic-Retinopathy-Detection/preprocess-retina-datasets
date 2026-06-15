@@ -66,6 +66,18 @@ package-dataset \
 | `--saliency-folder` | (required) | Folder of `.npy` saliency maps |
 | `--output-file` | (required) | Output pickle file path |
 
+### `visualise_saliency.py` — Visually inspect saliency maps
+
+Utility script that shows an image, its saliency map (hot colormap), and a
+semi-transparent overlay side by side. Useful for qualitative checks after
+running `detect-saliency`.
+
+```bash
+uv run python scripts/visualise_saliency.py \
+    data/cropped/train/10_left.jpeg \
+    data/saliency/train/10_left.npy
+```
+
 ## Dataset preparation
 
 The EyePACS Kaggle dataset is distributed as split zip archives. Extract them first:
