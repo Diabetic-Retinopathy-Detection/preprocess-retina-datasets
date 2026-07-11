@@ -30,9 +30,9 @@ detect-saliency = "preprocess_retina_datasets.cli.saliency:main"
 build-dataset-index = "preprocess_retina_datasets.cli.package:main"
 
 [project.urls]
-Homepage = "https://Meier-Stefan.github.io/preprocess-retina-datasets/"
+Homepage = "https://diabetic-retinopathy-detection.github.io/preprocess-retina-datasets/"
 Repository = "https://github.com/Diabetic-Retinopathy-Detection/preprocess-retina-datasets"
-Documentation = "https://Meier-Stefan.github.io/preprocess-retina-datasets/"
+Documentation = "https://diabetic-retinopathy-detection.github.io/preprocess-retina-datasets/"
 
 [dependency-groups]
 dev = [
