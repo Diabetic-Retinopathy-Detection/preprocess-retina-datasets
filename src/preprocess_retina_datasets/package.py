@@ -2,7 +2,8 @@
 
 This module collects images and saliency maps from two directories,
 matches them by relative path key, and writes a pickle file containing
-pairs of absolute ``Path`` objects ``list[tuple[Path, Path]]``.
+a list of ``(image_path, saliency_path)`` tuples with paths relative
+to their respective input directories.
 """
 
 from __future__ import annotations
@@ -69,10 +70,9 @@ def build_dataset_index(
     """Pair images with their saliency maps and write a dataset index pickle.
 
     The pickle contains ``list[tuple[Path, Path]]`` where each tuple is
-    ``(absolute_image_path, absolute_saliency_path)``.  Keys are derived from
-    each file's path relative to its root directory, with the suffix removed,
-    so files in different subdirectories with the same filename stem are
-    correctly distinguished.
+    ``(image_path, saliency_path)`` stored **relative** to its respective
+    input directory.  The consumer resolves paths by joining its own data
+    directory with these relative paths.
 
     Args:
         image_dir: Directory containing cropped images.
@@ -90,6 +90,7 @@ def build_dataset_index(
     _compare_keys(images, saliency)
 
     pairs = _build_pairs(images, saliency)
+    pairs = [(p.relative_to(image_dir), s.relative_to(saliency_dir)) for p, s in pairs]
 
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with output_file.open("wb") as f:

@@ -23,6 +23,11 @@ def _make_saliency(path: Path, size: tuple[int, int] = (512, 512)) -> None:
     np.save(str(path), arr)
 
 
+def _load_pickle(pkl_path: Path) -> list:
+    with pkl_path.open("rb") as f:
+        return pickle.load(f)  # noqa: S301
+
+
 class TestCliDirect:
     def test_success(self, tmp_path: Path) -> None:
         image_dir = tmp_path / "images"
@@ -42,8 +47,7 @@ class TestCliDirect:
         assert exit_code == 0
         assert output_file.exists()
 
-        with output_file.open("rb") as f:
-            pairs = pickle.load(f)  # noqa: S301
+        pairs = _load_pickle(output_file)
         assert len(pairs) == 1
 
 
