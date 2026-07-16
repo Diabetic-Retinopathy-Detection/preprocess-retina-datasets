@@ -14,7 +14,7 @@ from preprocess_retina_datasets.package import build_dataset_index
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Entry point for the ``package-dataset`` console script.
+    """Entry point for the ``build-dataset-index`` console script.
 
     Args:
         argv: Argument list (defaults to :data:`sys.argv`).
@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
         "--output-file",
         type=str,
         required=True,
-        help="Path for the output pickle file (list[tuple[Path, Path]]).",
+        help="Path for the output pickle file.",
     )
     args = parser.parse_args(argv)
 
