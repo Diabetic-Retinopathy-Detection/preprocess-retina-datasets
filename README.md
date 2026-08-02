@@ -78,6 +78,26 @@ uv run python scripts/visualise_saliency.py \
     data/saliency/train/10_left.npy
 ```
 
+### `visualise_saliency_thresholds.py` — Compare saliency thresholds
+
+Shows the image, the raw saliency map, and the binary saliency mask overlaid on
+the image at each of two thresholds (default `0.25` and `0.5`), with the
+percentage of pixels passing each threshold in the panel title. Useful to see
+how the BCE segmentation target changes with `saliency_threshold` in pretraining.
+
+```bash
+uv run python scripts/visualise_saliency_thresholds.py \
+    data/cropped/train/10_left.jpeg \
+    data/saliency/train/10_left.npy \
+    --output saliency_thresholds.png
+```
+
+| Argument | Description |
+|----------|-------------|
+| `<image>` | Cropped fundus image |
+| `<saliency.npy>` | Corresponding saliency map |
+| `--output` | Optional path to save the figure (defaults to an interactive window) |
+
 ## Dataset preparation
 
 The EyePACS Kaggle dataset is distributed as split zip archives. Extract them first:
