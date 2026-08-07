@@ -7,3 +7,5 @@
 ::: preprocess_retina_datasets.cli.saliency
 ::: preprocess_retina_datasets.package
 ::: preprocess_retina_datasets.cli.package
+::: preprocess_retina_datasets.ddr
+::: preprocess_retina_datasets.cli.ddr

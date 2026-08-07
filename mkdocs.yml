@@ -9,7 +9,9 @@ copyright: Maintained by <a href="https://Meier-Stefan.com">Meier-Stefan</a>.
 
 nav:
   - Home: index.md
-  - Dataset: extraction.md
+  - Datasets:
+      - EyePACS: extraction.md
+      - DDR: ddr.md
   - Modules: modules.md
 plugins:
   - search

@@ -66,6 +66,23 @@ build-dataset-index \
 | `--saliency-folder` | (required) | Folder of `.npy` saliency maps |
 | `--output-file` | (required) | Output pickle file path |
 
+### `prepare-ddr` — Build a grade-labelled DDR ImageFolder
+
+Reads the DDR `DR_grading` split files (`train.txt`, `valid.txt`, `test.txt`, one `<filename> <grade>` pair per line) and stages the images into a PyTorch ImageFolder layout `output/{split}/{grade}/`. Images are symlinked into place by default so the source files are not duplicated; pass `--copy` on filesystems or for transfers where symlinks are not preserved.
+
+```bash
+prepare-ddr \
+    --input data/DDR-dataset/DR_grading \
+    --output data/DDR-ImageFolder
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--input` | (required) | DDR `DR_grading/` directory (contains `train.txt`, `valid.txt`, `test.txt`) |
+| `--output` | (required) | Output directory for the ImageFolder structure |
+| `--exclude-grade` | `5` | Grade to exclude (`5` = unreadable) |
+| `--copy` | symlinks | Copy image files instead of creating symlinks |
+
 ### `visualise_saliency.py` — Visually inspect saliency maps
 
 Utility script that shows an image, its saliency map (hot colormap), and a
@@ -107,6 +124,15 @@ bash scripts/extract_eyepacs.sh
 ```
 
 See [`docs/extraction.md`](docs/extraction.md) for details.
+
+The DDR dataset is distributed as a multi-part zip archive. Extract and stage it into an ImageFolder:
+
+```bash
+bash scripts/extract_ddr.sh
+prepare-ddr --input data/DDR-dataset/DR_grading --output data/DDR-ImageFolder
+```
+
+See [`docs/ddr.md`](docs/ddr.md) for details.
 
 ## Install
 
