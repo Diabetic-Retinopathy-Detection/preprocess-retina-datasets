@@ -4,6 +4,7 @@ import pickle
 import subprocess
 import sys
 from pathlib import Path
+from typing import cast
 
 import cv2
 import numpy as np
@@ -23,9 +24,9 @@ def _make_saliency(path: Path, size: tuple[int, int] = (512, 512)) -> None:
     np.save(str(path), arr)
 
 
-def _load_pickle(pkl_path: Path) -> list:
+def _load_pickle(pkl_path: Path) -> list[tuple[Path, Path]]:
     with pkl_path.open("rb") as f:
-        return pickle.load(f)  # noqa: S301
+        return cast(list[tuple[Path, Path]], pickle.load(f))  # noqa: S301
 
 
 class TestCliDirect:

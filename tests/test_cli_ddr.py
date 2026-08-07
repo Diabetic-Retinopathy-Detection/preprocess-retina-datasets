@@ -4,6 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from preprocess_retina_datasets.cli.ddr import main as cli_main
 
 
@@ -28,7 +30,7 @@ def _make_grading(tmp_path: Path) -> Path:
 
 
 class TestCliDirect:
-    def test_success_symlinks(self, tmp_path: Path, capsys) -> None:
+    def test_success_symlinks(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         input_dir = _make_grading(tmp_path)
         output_dir = tmp_path / "out"
 
@@ -52,7 +54,7 @@ class TestCliDirect:
         assert copied.is_file()
         assert not copied.is_symlink()
 
-    def test_exclude_grade(self, tmp_path: Path, capsys) -> None:
+    def test_exclude_grade(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         input_dir = _make_grading(tmp_path)
         output_dir = tmp_path / "out"
 
@@ -63,7 +65,7 @@ class TestCliDirect:
         out = capsys.readouterr().out
         assert "train: 4 images staged, 2 excluded" in out
 
-    def test_missing_input_dir_returns_one(self, tmp_path: Path, capsys) -> None:
+    def test_missing_input_dir_returns_one(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         exit_code = cli_main(["--input", str(tmp_path / "nope"), "--output", str(tmp_path / "out")])
 
         assert exit_code == 1
