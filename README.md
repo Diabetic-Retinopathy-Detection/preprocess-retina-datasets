@@ -7,6 +7,74 @@ Preprocessing tools for retinal fundus image datasets. Converts raw datasets int
 
 ## How to use
 
+### Set up EyePACS for pretraining
+
+Place the multipart EyePACS archives in:
+
+```text
+data/EyePACS-Kaggle/diabetic-retinopathy-detection/
+  train.zip.001 ... train.zip.005
+  test.zip.001  ... test.zip.007
+```
+
+Install the project dependencies, then extract both splits:
+
+```bash
+make install
+bash scripts/extract_eyepacs.sh
+```
+
+Crop the extracted training images before pretraining:
+
+```bash
+crop-images \
+    --image-folder data/EyePACS-Kaggle/diabetic-retinopathy-detection/extracted/train \
+    --output-folder data/cropped/train \
+    --crop-size 512 \
+    --skip-existing \
+    --num-workers 8
+```
+
+Generate saliency maps for the cropped training images:
+
+```bash
+detect-saliency \
+    --image-folder data/cropped/train \
+    --output-folder data/saliency/train \
+    --skip-existing \
+    --num-workers 8
+```
+
+Build the image/saliency index used by the pretraining datamodule:
+
+```bash
+build-dataset-index \
+    --image-folder data/cropped/train \
+    --saliency-folder data/saliency/train \
+    --output-file data/data_index/train.pkl
+```
+
+The pretraining-ready files are then:
+
+```text
+data/cropped/train/          # cropped EyePACS images
+data/saliency/train/         # matching .npy saliency maps
+data/data_index/train.pkl    # paired image/saliency index
+```
+
+The test images are extracted by `extract_eyepacs.sh` but are not needed for
+self-supervised pretraining. Crop them separately if they are needed for a
+later evaluation:
+
+```bash
+crop-images \
+    --image-folder data/EyePACS-Kaggle/diabetic-retinopathy-detection/extracted/test \
+    --output-folder data/cropped/test \
+    --crop-size 512 \
+    --skip-existing \
+    --num-workers 8
+```
+
 ### Set up DDR for finetuning
 
 For fine-tuning, crop the raw DDR images before creating the labelled
