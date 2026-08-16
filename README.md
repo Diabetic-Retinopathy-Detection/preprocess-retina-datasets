@@ -5,6 +5,54 @@ Preprocessing tools for retinal fundus image datasets. Converts raw datasets int
 - **GitHub**: <https://github.com/Diabetic-Retinopathy-Detection/preprocess-retina-datasets/>
 - **Documentation**: <https://Meier-Stefan.github.io/preprocess-retina-datasets/>
 
+## How to use
+
+### Set up DDR for finetuning
+
+For fine-tuning, crop the raw DDR images before creating the labelled
+ImageFolder. The crop tool removes dark borders, extracts the retinal region,
+and resizes each image to a uniform square. The commands below keep the raw
+dataset unchanged and create separate cropped output directories:
+
+```bash
+RAW=data/DDR-dataset/DR_grading
+CROPPED=data/DDR-dataset-cropped/DR_grading
+
+for split in train valid test; do
+    crop-images \
+        --image-folder "${RAW}/${split}" \
+        --output-folder "${CROPPED}/${split}" \
+        --crop-size 512 \
+        --skip-existing \
+        --num-workers 8
+    cp "${RAW}/${split}.txt" "${CROPPED}/${split}.txt"
+done
+```
+
+Then create the grade-labelled ImageFolder using real file copies. Using
+`--copy` avoids broken absolute symlinks when the dataset is transferred to a
+cluster or another machine:
+
+```bash
+prepare-ddr \
+    --input data/DDR-dataset-cropped/DR_grading \
+    --output data/DDR-ImageFolder-cropped \
+    --copy
+```
+
+The resulting layout is:
+
+```text
+DDR-ImageFolder-cropped/
+  train/0/  train/1/  train/2/  train/3/  train/4/
+  valid/0/  valid/1/  valid/2/  valid/3/  valid/4/
+  test/0/   test/1/   test/2/   test/3/   test/4/
+```
+
+`--skip-existing` makes the crop step safe to rerun after an interruption.
+Saliency maps and a dataset index are not required for supervised DDR
+fine-tuning; those are used by the self-supervised pretraining pipeline.
+
 ## Tools
 
 ### `crop-images` — Bounding-box crop and resize
@@ -82,52 +130,6 @@ prepare-ddr \
 | `--output` | (required) | Output directory for the ImageFolder structure |
 | `--exclude-grade` | `5` | Grade to exclude (`5` = unreadable) |
 | `--copy` | symlinks | Copy image files instead of creating symlinks |
-
-### Crop DDR images before staging
-
-For fine-tuning, crop the raw DDR images before creating the labelled
-ImageFolder. The crop tool removes dark borders, extracts the retinal region,
-and resizes each image to a uniform square. The commands below keep the raw
-dataset unchanged and create separate cropped output directories:
-
-```bash
-RAW=data/DDR-dataset/DR_grading
-CROPPED=data/DDR-dataset-cropped/DR_grading
-
-for split in train valid test; do
-    crop-images \
-        --image-folder "${RAW}/${split}" \
-        --output-folder "${CROPPED}/${split}" \
-        --crop-size 512 \
-        --skip-existing \
-        --num-workers 8
-    cp "${RAW}/${split}.txt" "${CROPPED}/${split}.txt"
-done
-```
-
-Then create the grade-labelled ImageFolder using real file copies. Using
-`--copy` avoids broken absolute symlinks when the dataset is transferred to a
-cluster or another machine:
-
-```bash
-prepare-ddr \
-    --input data/DDR-dataset-cropped/DR_grading \
-    --output data/DDR-ImageFolder-cropped \
-    --copy
-```
-
-The resulting layout is:
-
-```text
-DDR-ImageFolder-cropped/
-  train/0/  train/1/  train/2/  train/3/  train/4/
-  valid/0/  valid/1/  valid/2/  valid/3/  valid/4/
-  test/0/   test/1/   test/2/   test/3/   test/4/
-```
-
-`--skip-existing` makes the crop step safe to rerun after an interruption.
-Saliency maps and a dataset index are not required for supervised DDR
-fine-tuning; those are used by the self-supervised pretraining pipeline.
 
 ### `visualise_saliency.py` — Visually inspect saliency maps
 
