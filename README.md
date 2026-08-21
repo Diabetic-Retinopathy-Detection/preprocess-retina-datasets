@@ -3,7 +3,6 @@
 Preprocessing tools for retinal fundus image datasets. Converts raw datasets into a uniform structure for downstream training and evaluation.
 
 - **GitHub**: <https://github.com/Diabetic-Retinopathy-Detection/preprocess-retina-datasets/>
-- **Documentation**: <https://Meier-Stefan.github.io/preprocess-retina-datasets/>
 
 ## How to use
 
@@ -17,7 +16,9 @@ data/EyePACS-Kaggle/diabetic-retinopathy-detection/
   test.zip.001  ... test.zip.007
 ```
 
-Install the project dependencies, then extract both splits:
+Install the project dependencies, then extract both splits. Python 3.10 or
+newer is required. The extraction scripts additionally require `p7zip`, and
+saliency detection uses `opencv-contrib-python-headless`.
 
 ```bash
 make install
@@ -121,16 +122,25 @@ DDR-ImageFolder-cropped/
 Saliency maps and a dataset index are not required for supervised DDR
 fine-tuning; those are used by the self-supervised pretraining pipeline.
 
+The project does not download or redistribute datasets. Obtain each dataset
+from its authoritative source and follow its licence, Kaggle terms, and
+redistribution restrictions.
+
 ## Tools
 
 ### `crop-images` — Bounding-box crop and resize
 
-Removes dark borders from retinal fundus images and resizes to a uniform square. The image is blurred, thresholded to create a foreground mask, and the bounding box of the retina region is extracted. Falls back to a centered square crop if the retina region cannot be detected.
+Removes dark borders from retinal fundus images and resizes to a uniform RGB
+square. The image is blurred, thresholded to create a foreground mask, and the
+bounding box of the retina region is extracted. It falls back to a centered
+square crop if the retina region cannot be detected. Output files retain the
+input suffix; metadata is not preserved by the Pillow conversion. Supported
+input extensions are `.jpeg`, `.jpg`, `.png`, `.tiff`, `.tif`, and `.bmp`.
 
 ```bash
 crop-images \
     --image-folder data/EyePACS-Kaggle/diabetic-retinopathy-detection/extracted/train \
-    --output-folder data/cropped \
+    --output-folder data/cropped/train \
     --crop-size 512 \
     --skip-existing \
     -n 8
@@ -146,7 +156,11 @@ crop-images \
 
 ### `detect-saliency` — Generate saliency maps for training
 
-Takes cropped retina fundus images (output of `crop-images`) and produces saliency maps as `.npy` files (float32). The output preserves the input directory structure and is designed for direct use in training pipelines that expect per-image `.npy` saliency maps.
+Takes cropped retina fundus images (output of `crop-images`) and produces
+saliency maps as `.npy` files (`float32`). The output preserves the input
+directory structure and replaces the image suffix with `.npy`. Maps have the
+processed image dimensions, values in `[0, 1]`, and zeros outside the circular
+fundus mask.
 
 The preprocessing pipeline applies unsharp masking, a circular fundus mask, and JPEG simulation before running OpenCV's StaticSaliencyFineGrained detector.
 
@@ -167,7 +181,15 @@ detect-saliency \
 
 ### `build-dataset-index` — Build a dataset index pickle
 
-Pairs cropped images with their saliency maps by relative path key and writes a pickle containing `list[tuple[Path, Path]]` of relative paths. Requires that every image has a matching saliency map and vice versa; raises an error on mismatch with a bounded sample of the missing/extra keys.
+Pairs cropped images with their saliency maps by relative path key and writes a
+pickle containing `list[tuple[Path, Path]]` of relative paths. Each image path
+is relative to `--image-folder` and each saliency path is relative to
+`--saliency-folder`; they are not relative to one common root. Relative
+subdirectories and filename stems must match, with the image suffix changed to
+`.npy` for saliency maps. Requires that every image has a matching saliency map
+and vice versa; raises an error on mismatch with a bounded sample of the
+missing/extra keys. Files with the same stem and different image extensions can
+collide during matching, so avoid such layouts.
 
 ```bash
 build-dataset-index \
@@ -184,7 +206,13 @@ build-dataset-index \
 
 ### `prepare-ddr` — Build a grade-labelled DDR ImageFolder
 
-Reads the DDR `DR_grading` split files (`train.txt`, `valid.txt`, `test.txt`, one `<filename> <grade>` pair per line) and stages the images into a PyTorch ImageFolder layout `output/{split}/{grade}/`. Images are symlinked into place by default so the source files are not duplicated; pass `--copy` on filesystems or for transfers where symlinks are not preserved.
+Reads the DDR `DR_grading` split files (`train.txt`, `valid.txt`, `test.txt`,
+one `<filename> <grade>` pair per line) and stages the images into a PyTorch
+ImageFolder layout `output/{split}/{grade}/`. DDR emits `valid/`; the model
+repository accepts both `valid/` and `val/` as the validation directory.
+Images are symlinked into place by default so the source files are not
+duplicated; pass `--copy` when symlinks will not be preserved. Grades outside
+`0` through `4` are excluded; `--exclude-grade` defaults to `5`.
 
 ```bash
 prepare-ddr \
@@ -241,7 +269,9 @@ bash scripts/extract_eyepacs.sh
 
 See [`docs/extraction.md`](docs/extraction.md) for details.
 
-The DDR dataset is distributed as a multi-part zip archive. Extract and stage it into an ImageFolder:
+The DDR dataset is distributed as a multi-part zip archive. Place the archive
+parts under `data/DDR-dataset/ZIP/`, extract them, and stage the result into an
+ImageFolder:
 
 ```bash
 bash scripts/extract_ddr.sh
@@ -250,11 +280,27 @@ prepare-ddr --input data/DDR-dataset/DR_grading --output data/DDR-ImageFolder
 
 See [`docs/ddr.md`](docs/ddr.md) for details.
 
+## Using the outputs with the model repository
+
+For pretraining, configure `diabetic-retinopathy-model` with:
+
+```yaml
+data_dir: ../data
+data_index_path: ../data/data_index/train.pkl
+```
+
+The shared data root must contain `cropped/train/` and `saliency/train/`.
+For DDR fine-tuning, set `finetune_dataset_root` to the directory produced by
+`prepare-ddr`; it contains `train/`, `valid/`, and `test/` ImageFolder splits.
+
 ## Install
 
 ```bash
 make install
 ```
+
+The extraction scripts require the `7z` command. On macOS install it with
+`brew install p7zip`; on Debian or Ubuntu use `apt install p7zip`.
 
 ## Development
 

@@ -1,8 +1,8 @@
 # DDR dataset preparation
 
 The [DDR dataset](https://deepblueai.github.io/project/ddr.html) is distributed as a multi-part zip archive.
-This document explains how to extract it and stage the images into a grade-labelled ImageFolder suitable for
-k-NN evaluation of pretrained encoders.
+This document explains how to extract it and stage the images into a
+grade-labelled ImageFolder suitable for downstream fine-tuning or evaluation.
 
 ## Prerequisites
 
@@ -25,7 +25,9 @@ bash scripts/extract_ddr.sh
 |---------|-------|--------|--------|
 | DDR | `DDR-dataset.zip.001` – `.010` | `data/DDR-dataset/DR_grading/` | 13,673 |
 
-Extracting only the first part (`.001`) automatically references the remaining parts.
+The archive parts must be placed in `data/DDR-dataset/ZIP/`. Extracting only
+the first part (`.001`) automatically references the remaining parts, but all
+ten parts must be present.
 
 Then stage the images into an ImageFolder layout with `prepare-ddr`:
 
@@ -42,7 +44,9 @@ prepare-ddr \
 | `--exclude-grade` | `5` | Grade to exclude (`5` = unreadable) |
 | `--copy` | symlinks | Copy image files instead of creating symlinks |
 
-By default images are **symlinked** into place, so the 15 GB of source images are not duplicated.
+By default images are **symlinked** into place, so the source images are not
+duplicated. The reported 15 GB refers to the extracted source-data footprint,
+not the compressed archive parts or necessarily the final ImageFolder output.
 Use `--copy` on filesystems or for transfers (e.g. tar/scp) where symlinks are not preserved.
 
 ## Grades
@@ -68,7 +72,7 @@ DDR-ImageFolder/
     0/  1/  2/  3/  4/
 ```
 
-Images per split and grade (grade 5 excluded):
+Images per split and grade (grades outside 0--4 excluded):
 
 | Split | 0 | 1 | 2 | 3 | 4 | Total |
 |-------|-----|-----|------|-----|-----|-------|
