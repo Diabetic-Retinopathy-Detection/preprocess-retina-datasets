@@ -29,6 +29,7 @@ crop-images = "preprocess_retina_datasets.cli.crop:main"
 detect-saliency = "preprocess_retina_datasets.cli.saliency:main"
 build-dataset-index = "preprocess_retina_datasets.cli.package:main"
 prepare-ddr = "preprocess_retina_datasets.cli.ddr:main"
+prepare-idrid = "preprocess_retina_datasets.cli.idrid:main"
 
 [project.urls]
 Homepage = "https://diabetic-retinopathy-detection.github.io/preprocess-retina-datasets/"
