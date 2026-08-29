@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
+from typing import cast
 
 import cv2
 import numpy as np
@@ -24,6 +25,11 @@ def _make_saliency(path: Path, size: tuple[int, int] = (512, 512)) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     arr = np.random.rand(*size).astype(np.float32)
     np.save(str(path), arr)
+
+
+def _load_pickle(pkl_path: Path) -> list[tuple[Path, Path]]:
+    with pkl_path.open("rb") as f:
+        return cast(list[tuple[Path, Path]], pickle.load(f))  # noqa: S301
 
 
 class TestCollectFilesByKey:
@@ -88,16 +94,47 @@ class TestBuildDatasetIndex:
         build_dataset_index(image_dir, saliency_dir, output_file)
         assert output_file.exists()
 
-        with output_file.open("rb") as f:
-            pairs = pickle.load(f)  # noqa: S301
+        pairs = _load_pickle(output_file)
 
         assert isinstance(pairs, list)
         assert len(pairs) == 2
         for img_path, sal_path in pairs:
             assert isinstance(img_path, Path)
             assert isinstance(sal_path, Path)
-            assert img_path.is_absolute()
-            assert sal_path.is_absolute()
+            assert not img_path.is_absolute()
+            assert not sal_path.is_absolute()
+
+    def test_paths_relative_to_respective_dirs(self, tmp_path: Path) -> None:
+        image_dir = tmp_path / "data" / "images"
+        saliency_dir = tmp_path / "data" / "saliency"
+        output_file = tmp_path / "index.pkl"
+
+        _make_image(image_dir / "a.jpeg")
+        _make_saliency(saliency_dir / "a.npy")
+
+        build_dataset_index(image_dir, saliency_dir, output_file)
+
+        pairs = _load_pickle(output_file)
+        img_path, sal_path = pairs[0]
+        assert str(img_path) == "a.jpeg"
+        assert str(sal_path) == "a.npy"
+
+    def test_preserves_subdirectory_structure(self, tmp_path: Path) -> None:
+        image_dir = tmp_path / "images"
+        saliency_dir = tmp_path / "saliency"
+        output_file = tmp_path / "index.pkl"
+
+        _make_image(image_dir / "train" / "a.jpeg")
+        _make_image(image_dir / "val" / "a.jpeg")
+        _make_saliency(saliency_dir / "train" / "a.npy")
+        _make_saliency(saliency_dir / "val" / "a.npy")
+
+        build_dataset_index(image_dir, saliency_dir, output_file)
+
+        pairs = _load_pickle(output_file)
+        assert len(pairs) == 2
+        rel_paths = {str(img) for img, _ in pairs}
+        assert rel_paths == {"train/a.jpeg", "val/a.jpeg"}
 
     def test_count_mismatch_image_extra(self, tmp_path: Path) -> None:
         image_dir = tmp_path / "images"
@@ -123,28 +160,6 @@ class TestBuildDatasetIndex:
         with pytest.raises(ValueError, match="1 saliency map\\(s\\) without"):
             build_dataset_index(image_dir, saliency_dir, output_file)
 
-    def test_collision_different_subdirs(self, tmp_path: Path) -> None:
-        image_dir = tmp_path / "images"
-        saliency_dir = tmp_path / "saliency"
-        output_file = tmp_path / "index.pkl"
-
-        _make_image(image_dir / "train" / "a.jpeg")
-        _make_image(image_dir / "val" / "a.jpeg")
-        _make_saliency(saliency_dir / "train" / "a.npy")
-        _make_saliency(saliency_dir / "val" / "a.npy")
-
-        build_dataset_index(image_dir, saliency_dir, output_file)
-
-        with output_file.open("rb") as f:
-            pairs = pickle.load(f)  # noqa: S301
-
-        assert len(pairs) == 2
-        img_keys = {str(p.relative_to(image_dir)): str(s.relative_to(saliency_dir)) for p, s in pairs}
-        assert img_keys == {
-            "train/a.jpeg": "train/a.npy",
-            "val/a.jpeg": "val/a.npy",
-        }
-
     def test_empty_image_dir(self, tmp_path: Path) -> None:
         image_dir = tmp_path / "images"
         saliency_dir = tmp_path / "saliency"
@@ -166,8 +181,7 @@ class TestBuildDatasetIndex:
 
         build_dataset_index(image_dir, saliency_dir, output_file)
 
-        with output_file.open("rb") as f:
-            pairs = pickle.load(f)  # noqa: S301
+        pairs = _load_pickle(output_file)
         assert pairs == []
 
     def test_missing_input_dir(self, tmp_path: Path) -> None:

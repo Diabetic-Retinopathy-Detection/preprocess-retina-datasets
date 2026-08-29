@@ -4,6 +4,7 @@ import pickle
 import subprocess
 import sys
 from pathlib import Path
+from typing import cast
 
 import cv2
 import numpy as np
@@ -21,6 +22,11 @@ def _make_saliency(path: Path, size: tuple[int, int] = (512, 512)) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     arr = np.random.rand(*size).astype(np.float32)
     np.save(str(path), arr)
+
+
+def _load_pickle(pkl_path: Path) -> list[tuple[Path, Path]]:
+    with pkl_path.open("rb") as f:
+        return cast(list[tuple[Path, Path]], pickle.load(f))  # noqa: S301
 
 
 class TestCliDirect:
@@ -42,8 +48,7 @@ class TestCliDirect:
         assert exit_code == 0
         assert output_file.exists()
 
-        with output_file.open("rb") as f:
-            pairs = pickle.load(f)  # noqa: S301
+        pairs = _load_pickle(output_file)
         assert len(pairs) == 1
 
 
