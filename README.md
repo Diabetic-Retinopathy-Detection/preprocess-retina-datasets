@@ -122,6 +122,67 @@ DDR-ImageFolder-cropped/
 Saliency maps and a dataset index are not required for supervised DDR
 fine-tuning; those are used by the self-supervised pretraining pipeline.
 
+### Set up IDRiD for finetuning
+
+IDRiD provides disease-grading images and label CSVs but **no official
+validation split**. For fine-tuning, crop the raw original images, then stage
+them into a grade-labelled ImageFolder with a seeded stratified `train`/`valid`
+carve. `prepare-idrid` reads the training and testing label CSVs, reserves 20%
+of each training grade for `valid` (seed 42), and uses the official test set
+as-is.
+
+Crop the training and testing images (IDRiD ships flat image directories, so
+each set is cropped into its own folder):
+
+```bash
+crop-images \
+    --image-folder "datasets/IDRiD/B. Disease Grading/1. Original Images/a. Training Set" \
+    --output-folder data/IDRiD-cropped/train \
+    --crop-size 512 \
+    --skip-existing \
+    -n 8
+
+crop-images \
+    --image-folder "datasets/IDRiD/B. Disease Grading/1. Original Images/b. Testing Set" \
+    --output-folder data/IDRiD-cropped/test \
+    --crop-size 512 \
+    --skip-existing \
+    -n 8
+```
+
+Then create the grade-labelled ImageFolder. Default symlinks resolve to
+absolute paths that break on transfer, so use `--copy` for a cluster-safe
+transferable dataset:
+
+```bash
+prepare-idrid \
+    --train-images data/IDRiD-cropped/train \
+    --test-images data/IDRiD-cropped/test \
+    --labels-train "datasets/IDRiD/B. Disease Grading/2. Groundtruths/a. IDRiD_Disease Grading_Training Labels.csv" \
+    --labels-test "datasets/IDRiD/B. Disease Grading/2. Groundtruths/b. IDRiD_Disease Grading_Testing Labels.csv" \
+    --output data/IDRiD-ImageFolder \
+    --copy
+```
+
+The resulting layout is:
+
+```text
+IDRiD-ImageFolder/
+  train/0/  train/1/  train/2/  train/3/  train/4/
+  valid/0/  valid/1/  valid/2/  valid/3/  valid/4/
+  test/0/   test/1/   test/2/   test/3/   test/4/
+```
+
+Compute the per-channel mean/std over the exact consumer transform (crop ->
+Resize 384 -> ToTensor) before fine-tuning, on the full cropped training set:
+
+```bash
+compute-dataset-stats \
+    --image-folder data/IDRiD-cropped/train \
+    --resize 384 \
+    --output ../data/idrid-mean-std-384.json
+```
+
 The project does not download or redistribute datasets. Obtain each dataset
 from its authoritative source and follow its licence, Kaggle terms, and
 redistribution restrictions.
@@ -226,6 +287,59 @@ prepare-ddr \
 | `--output` | (required) | Output directory for the ImageFolder structure |
 | `--exclude-grade` | `5` | Grade to exclude (`5` = unreadable) |
 | `--copy` | symlinks | Copy image files instead of creating symlinks |
+
+### `prepare-idrid` — Build a grade-labelled IDRiD ImageFolder
+
+Reads the IDRiD disease-grading label CSVs (one for training, one for testing)
+and stages the cropped images into a PyTorch ImageFolder layout
+`output/{split}/{grade}/`. IDRiD has no official validation split, so 20% of
+each training grade is carved into `valid` (seed 42); the official test set is
+used as-is. Images are symlinked into place by default so the source files are
+not duplicated; pass `--copy` when symlinks will not be preserved (default
+symlinks resolve to absolute paths that break on transfer).
+
+```bash
+prepare-idrid \
+    --train-images data/IDRiD-cropped/train \
+    --test-images data/IDRiD-cropped/test \
+    --labels-train "datasets/IDRiD/B. Disease Grading/2. Groundtruths/a. IDRiD_Disease Grading_Training Labels.csv" \
+    --labels-test "datasets/IDRiD/B. Disease Grading/2. Groundtruths/b. IDRiD_Disease Grading_Testing Labels.csv" \
+    --output data/IDRiD-ImageFolder \
+    --copy
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--train-images` | (required) | Directory of the (cropped) training images |
+| `--test-images` | (required) | Directory of the (cropped) test images |
+| `--labels-train` | (required) | IDRiD training label CSV |
+| `--labels-test` | (required) | IDRiD test label CSV |
+| `--output` | (required) | Output directory for the ImageFolder structure |
+| `--valid-ratio` | `0.2` | Fraction of each training grade reserved for `valid` |
+| `--seed` | `42` | Random seed for the stratified valid split |
+| `--copy` | symlinks | Copy image files instead of creating symlinks |
+
+### `compute-dataset-stats` — Compute normalized per-channel mean/std
+
+Computes the per-channel mean/std of a dataset over the exact consumer
+transform used at fine-tuning time: PIL decode -> `Resize((384, 384))` (BILINEAR)
+-> `/255` (values in `[0, 1]`). The result is a pixel-weighted population
+mean/std over all resized pixels, useful as the `mean`/`std` for a PyTorch
+`Normalize` transform. Results are printed as JSON (6 decimals) or written to
+`--output`.
+
+```bash
+compute-dataset-stats \
+    --image-folder data/IDRiD-cropped/train \
+    --resize 384 \
+    --output ../data/idrid-mean-std-384.json
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--image-folder` | (required) | Folder of images (subfolders included) |
+| `--resize` | `384` | Resize images to this square size in pixels |
+| `--output` | stdout | Write the JSON result to this path instead of printing |
 
 ### `visualise_saliency.py` — Visually inspect saliency maps
 

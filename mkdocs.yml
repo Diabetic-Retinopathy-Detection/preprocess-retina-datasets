@@ -12,6 +12,7 @@ nav:
   - Datasets:
       - EyePACS: extraction.md
       - DDR: ddr.md
+      - IDRiD: idrid.md
   - Modules: modules.md
 plugins:
   - search
